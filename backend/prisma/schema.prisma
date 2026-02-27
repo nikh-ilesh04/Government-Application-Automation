@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  users User[]
+}
+
+model User {
+  id             Int              @id @default(autoincrement())
+  fullName       String?
+  email          String           @unique
+  password       String?
+  roleId         Int
+  createdAt      DateTime         @default(now())
+  role           Role             @relation(fields: [roleId], references: [id])
+  consentRecords ConsentRecord[]
+  applications   Application[]
+  verification   VerificationLog[]
+  billing        BillingRecord[]
+  auditLogs      AuditLog[]
+}
+
+model ConsentRecord {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  consentGiven Boolean
+  consentDate  DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model Application {
+  id           Int            @id @default(autoincrement())
+  userId       Int
+  type         String
+  state        String
+  createdAt    DateTime       @default(now())
+  user         User           @relation(fields: [userId], references: [id])
+  documents    Document[]
+  workflow     WorkflowStep[]
+  retries      RetryLog[]
+}
+
+model Document {
+  id              Int      @id @default(autoincrement())
+  applicationId   Int
+  filePath        String
+  documentType    String
+  confidenceScore Float?
+  uploadedAt      DateTime @default(now())
+  application     Application @relation(fields: [applicationId], references: [id])
+}
+
+model VerificationLog {
+  id               Int      @id @default(autoincrement())
+  userId           Int
+  verificationType String
+  status           String
+  responseData     Json
+  createdAt        DateTime @default(now())
+  user             User     @relation(fields: [userId], references: [id])
+}
+
+model WorkflowStep {
+  id            Int       @id @default(autoincrement())
+  applicationId Int
+  stepName      String
+  status        String
+  completedAt   DateTime?
+  application   Application @relation(fields: [applicationId], references: [id])
+}
+
+model RetryLog {
+  id            Int      @id @default(autoincrement())
+  applicationId Int
+  attemptNumber Int
+  status        String
+  createdAt     DateTime @default(now())
+  application   Application @relation(fields: [applicationId], references: [id])
+}
+
+model BillingRecord {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  amount    Decimal  @db.Decimal(10, 2)
+  status    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  action    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
